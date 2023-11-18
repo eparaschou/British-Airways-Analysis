@@ -1,0 +1,262 @@
+# Import necessary libraries
+import requests
+from bs4 import BeautifulSoup
+import pandas as pd
+import os
+
+# Mount Google Drive (if not already mounted)
+from google.colab import drive
+drive.mount('/content/drive')
+
+# Create the 'data' directory in Google Drive if it doesn't exist
+data_dir = '/content/drive/MyDrive/path/to/your/data'  # Change this path as needed
+os.makedirs(data_dir, exist_ok=True)
+
+# Define the base URL and parameters
+base_url = "https://www.airlinequality.com/airline-reviews/british-airways"
+pages = 10
+page_size = 100
+
+# Initialize a list to store reviews
+reviews = []
+
+# Loop through pages to scrape reviews
+for i in range(1, pages + 1):
+    print(f"Scraping page {i}")
+
+    # Create URL to collect links from paginated data
+    url = f"{base_url}/page/{i}/?sortby=post_date%3ADesc&pagesize={page_size}"
+
+    # Collect HTML data from this page
+    response = requests.get(url)
+
+    # Parse content
+    content = response.content
+    parsed_content = BeautifulSoup(content, 'html.parser')
+
+    # Extract reviews and append to the list
+    for para in parsed_content.find_all("div", {"class": "text_content"}):
+        reviews.append(para.get_text())
+
+    print(f"   ---> {len(reviews)} total reviews")
+
+# Create a DataFrame from the reviews list
+df = pd.DataFrame()
+df["reviews"] = reviews
+
+# Display the first few rows of the DataFrame
+df.head()
+
+df.to_csv(os.path.join(data_dir, "BA_reviews.csv"))
+df["reviews"] = df["reviews"].str.replace("✅ Trip Verified |", "")
+
+# Display the cleaned DataFrame
+df.head()
+
+
+
+import gdown
+import pandas as pd
+import os
+from nltk.sentiment import SentimentIntensityAnalyzer
+import matplotlib.pyplot as plt
+
+# Download the vader_lexicon resource
+import nltk
+nltk.download('vader_lexicon')
+
+# Set the working directory
+os.chdir(r"/content/drive/My Drive")
+
+# Google Drive link
+file_url = 'https://drive.google.com/uc?id=1-kpzjAXDgbVqrIYQfQ289r19suceW3DM'
+
+# Output file path
+output_path = '/content/drive/MyDrive/BA_reviews.csv'
+
+# Download the file
+gdown.download(file_url, output_path, quiet=False)
+
+# Read the CSV file
+df = pd.read_csv(output_path)
+
+# Display the first few rows of the DataFrame
+df.head()
+
+sia = SentimentIntensityAnalyzer()
+
+# Add a new column 'compound' to the DataFrame with compound sentiment scores
+df['compound'] = df['reviews'].apply(lambda x: sia.polarity_scores(x)['compound'])
+
+# Plot a histogram of the compound sentiment scores
+plt.hist(df['compound'], bins=30, edgecolor='k', alpha=0.7)
+plt.title('Sentiment Distribution')
+plt.xlabel('Compound Sentiment Score')
+plt.ylabel('Count')
+plt.show()
+
+from gensim import corpora, models
+from nltk.tokenize import word_tokenize
+from gensim import corpora, models
+from nltk.tokenize import word_tokenize
+import nltk
+
+# Download the 'punkt' resource
+nltk.download('punkt')
+# Tokenize the reviews
+tokenized_reviews = df['reviews'].apply(word_tokenize)
+
+# Create a dictionary representation of the reviews
+dictionary = corpora.Dictionary(tokenized_reviews)
+
+# Convert the tokenized reviews into a bag-of-words representation
+corpus = [dictionary.doc2bow(review) for review in tokenized_reviews]
+
+# Train the LDA model
+lda_model = models.LdaModel(corpus, num_topics=5, id2word=dictionary, passes=15)
+
+
+# Print the topics
+for topic, words in lda_model.print_topics():
+    print(f"Topic {topic + 1}: {words}")
+
+#Word Clouds
+from wordcloud import WordCloud
+import matplotlib.pyplot as plt
+
+# Combine all reviews into one text
+all_reviews_text = ' '.join(df['reviews'])
+
+# Generate a word cloud
+wordcloud = WordCloud(width=800, height=400, random_state=21, max_font_size=110, background_color='white').generate(all_reviews_text)
+
+# Plot the WordCloud image                        
+plt.figure(figsize=(10, 7))
+plt.imshow(wordcloud, interpolation="bilinear")
+plt.axis('off')
+plt.show()
+
+
+
+from collections import Counter
+import matplotlib.pyplot as plt
+
+# Sample data (replace this with your actual data)
+data = ["flight", "seat", "BA", "service", "Verified", "time", "Trip", "BA", "check"]
+
+# Create a Counter object to count word frequencies
+word_counts = Counter(data)
+
+# Extract the top N words and their frequencies
+top_words = word_counts.most_common()
+
+# Separate words and frequencies for plotting
+words, frequencies = zip(*top_words)
+
+# Create a bar chart for frequency
+plt.figure(figsize=(10, 5))
+plt.bar(words, frequencies, color='skyblue')
+plt.title('Most Common Topics in Reviews')
+plt.xlabel('Topics')
+plt.ylabel('Frequency')
+plt.show()
+
+
+
+import gdown
+import pandas as pd
+
+# Google Drive file ID
+file_id = '1-n05a7VFMgbINIFRe02EfMcN5ELomSwO'
+
+# Specify the file name
+file_name = 'CustomerBooking.csv'
+
+# Google Drive download link
+gdown_link = f'https://drive.google.com/uc?id={file_id}'
+
+# Download the file
+output = f'/content/{file_name}'
+gdown.download(gdown_link, output, quiet=False)
+
+# Read the CSV file
+df = pd.read_csv(output, encoding='ISO-8859-1')
+df.info()
+df.describe()
+
+
+# Import necessary libraries
+from sklearn.model_selection import train_test_split
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.metrics import accuracy_score, classification_report
+import pandas as pd
+import gdown
+import os
+
+# Download the dataset
+file_id = '1-n05a7VFMgbINIFRe02EfMcN5ELomSwO'
+output_path = '/content/gdrive/MyDrive/1-n05a7VFMgbINIFRe02EfMcN5ELomSwO.csv'
+if not os.path.exists(output_path):
+    gdown.download(f'https://drive.google.com/uc?id={file_id}', output_path, quiet=False)
+
+# Read the CSV file
+df = pd.read_csv(output_path, encoding="ISO-8859-1")
+
+# Target variable: 'booking_complete' (1 for booked, 0 for not booked)
+X = df.drop('booking_complete', axis=1)
+y = df['booking_complete']
+
+# One-hot encode categorical variables
+X = pd.get_dummies(X)
+# Split the data into training and testing sets
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+
+# Initialize the RandomForestClassifier
+rf_classifier = RandomForestClassifier(n_estimators=100, random_state=42)
+
+# Train the model
+rf_classifier.fit(X_train, y_train)
+
+# Make predictions on the test set
+y_pred = rf_classifier.predict(X_test)
+
+# Evaluate the model
+accuracy = accuracy_score(y_test, y_pred)
+print(f"Accuracy: {accuracy:.2f}")
+
+# Display classification report
+print(classification_report(y_test, y_pred))
+
+# Extract feature importances
+importances = pd.DataFrame()
+importances['Feature'] = X.columns
+importances['Importance'] = rf_classifier.feature_importances_
+
+
+# Sort the features by importance in descending order
+importances = importances.sort_values(by='Importance', ascending=False)
+
+# Display feature importances
+print(importances)
+
+
+import random
+#Test model's performance on random sample
+# Set a seed for reproducibility
+random.seed(42)
+
+# Randomly sample a subset of your data
+sample_size = 10000  # Adjust this based on your needs
+sample_indices = random.sample(range(len(X)), sample_size)
+X_sample = X.iloc[sample_indices]
+y_sample = y.iloc[sample_indices]
+
+# Perform cross-validation on the smaller dataset
+cv_scores = cross_val_score(rf_classifier, X_sample, y_sample, cv=5, scoring='accuracy')
+print(f"Cross-validated Accuracy on Sample: {cv_scores.mean():.2f} (+/- {cv_scores.std() * 2:.2f})")
+
+rf_classifier.fit(X, y)
+
+# Perform cross-validation on the entire dataset
+cv_scores = cross_val_score(rf_classifier, X, y, cv=5, scoring='accuracy')
+print(f"Cross-validated Accuracy on Full Dataset: {cv_scores.mean():.2f} (+/- {cv_scores.std() * 2:.2f})")
