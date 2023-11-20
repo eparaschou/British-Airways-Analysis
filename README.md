@@ -1,4 +1,4 @@
-# British Airways Data Science Simulation on Forage
+# British Airways Customer Review Analysis
 
 * Completed a simulation focussing on how data science is a critical component of British Airways success
 * Scraped and analysed customer review data to uncover findings 
